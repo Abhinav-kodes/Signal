@@ -6,10 +6,10 @@
     "apps/*",
     "packages/*"
   ],
-  "scripts": {
-    "dev:server": "bun --filter ./apps/server run dev",
-    "dev:client": "bun --filter ./apps/electron-client run dev",
-    "dev:ext": "bun --filter ./apps/browser-extension run dev",
+"scripts": {
+    "dev:server": "cd apps/server && bun run dev",
+    "dev:client": "cd apps/electron-client && bun run dev",
+    "dev:ext": "cd apps/browser-extension && bun run dev",
     "services:up": "docker compose up -d",
     "services:down": "docker compose down"
   },

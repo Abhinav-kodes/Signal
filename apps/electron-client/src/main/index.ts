@@ -62,6 +62,17 @@ if (!gotTheLock) {
     }
   })
 
+  // 1. Tell Chromium to ignore certificate errors globally
+app.commandLine.appendSwitch('ignore-certificate-errors')
+
+// 2. Catch the specific event and force it to proceed
+app.on('certificate-error', (event, webContents, url, error, certificate, callback) => {
+  // Prevent the default behavior of immediately halting the load
+  event.preventDefault()
+  // Tell the app to trust the certificate anyway
+  callback(true)
+})
+
   app.whenReady().then(() => {
     const iconPath = process.env['ELECTRON_RENDERER_URL'] 
       ? join(__dirname, '../../build/icons/512x512.png')
