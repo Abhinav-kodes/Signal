@@ -1,38 +1,27 @@
 import React, { useState, useEffect } from 'react';
 
-// Status of the launch process to manage UI states
 type Status = 'idle' | 'loading' | 'success' | 'error';
-
 
 export default function Popup() {
   const [status, setStatus] = useState<Status>('idle');
   const [currentUrl, setCurrentUrl] = useState('');
   const [errorMsg, setErrorMsg] = useState('');
 
-  // Show the active tab URL in the popup for context
   useEffect(() => {
-    // Query Chrome for the active tab in the current window
     chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
-      // tabs is an array: the first item is the active tab
       if (tabs[0]?.url) {
-        // Store the tab's URL in React state
         setCurrentUrl(tabs[0].url); 
       }
     });
-    // Empty dependency array ensures this runs only once
   }, []);
 
-  // fuction when button is clicked
   const handleLaunch = () => {
-
     setStatus('loading');
     setErrorMsg('');
 
-    // send message to Background
     chrome.runtime.sendMessage(
       { type: 'LAUNCH_SIGNAL' },
       (res: { ok: boolean; error?: string }) => {
-        // error handling
         if (chrome.runtime.lastError || !res?.ok) {
           setErrorMsg(res?.error ?? chrome.runtime.lastError?.message ?? 'Launch failed.');
           setStatus('error');
@@ -48,155 +37,161 @@ export default function Popup() {
     try {
       const u = new URL(currentUrl);
       const path = u.pathname + u.search;
-      const truncated = path.length > 30 ? path.slice(0, 30) + '…' : path;
+      const truncated = path.length > 35 ? path.slice(0, 35) + '…' : path;
       return u.hostname + truncated;
-    } catch { return null; }
+    } catch { return 'Detecting URL...'; }
   })();
 
   return (
     <div style={styles.container}>
       {/* Header */}
       <div style={styles.header}>
-        <span style={styles.logo}>⚡</span>
-        <div>
-          <div style={styles.title}>Signal</div>
-          <div style={styles.subtitle}>No-code web tracker</div>
+        <div style={styles.brand}>
+          <img src="/48x48.png" style={styles.icon} alt="Signal Logo" />
+          <span style={styles.title}>Signal</span>
+        </div>
+        <div style={styles.badge}>TRACKER</div>
+      </div>
+
+      <div style={styles.divider} />
+
+      {/* Target Info */}
+      <div style={styles.infoSection}>
+        <div style={styles.label}>TARGET_URL</div>
+        <div style={styles.urlBox}>
+          {displayUrl}
         </div>
       </div>
 
-      {/* Current page pill */}
-      {displayUrl && (
-        <div style={styles.urlPill}>
-          <span style={styles.dot} />
-          {displayUrl}
-        </div>
-      )}
-
-      {/* Description */}
-      <p style={styles.description}>
-        Opens this page in the Signal desktop app. Click any element to start tracking it.
-      </p>
-
-      {/* Button */}
+      {/* Action Button */}
       <button
         style={{
           ...styles.button,
-          ...(status === 'loading' ? styles.buttonDisabled : {}),
+          ...(status === 'loading' ? styles.buttonLoading : {}),
           ...(status === 'success' ? styles.buttonSuccess : {}),
         }}
         onClick={handleLaunch}
         disabled={status === 'loading' || status === 'success'}
       >
-        {status === 'idle' && 'Open in Signal Desktop'}
-        {status === 'loading' && 'Launching…'}
-        {status === 'success' && 'Signal is opening!'}
-        {status === 'error' && 'Open in Signal Desktop'}
+        {status === 'idle' && 'Open in Desktop'}
+        {status === 'loading' && 'Launching...'}
+        {status === 'success' && 'Launched.'}
+        {status === 'error' && 'Retry Launch'}
       </button>
 
-      {/* Error */}
+      {/* Error Output */}
       {status === 'error' && (
         <div style={styles.errorBox}>
+          <span style={styles.errorLabel}>ERR: </span>
           {errorMsg}
         </div>
       )}
-
-      {/* Footer hint */}
-      <div style={styles.footer}>
-        Make sure Signal Desktop is installed and running.
-      </div>
     </div>
   );
 }
 
 const styles: Record<string, React.CSSProperties> = {
   container: {
-    width: 280,
-    padding: '18px 16px 14px',
-    background: '#09090b',
-    color: '#fafafa',
-    fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif',
+    width: 260,
+    padding: '16px',
+    background: '#09090B', // Zinc 950
+    color: '#FAFAFA', // Zinc 50
+    fontFamily: 'Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif',
     display: 'flex',
     flexDirection: 'column',
-    gap: 12,
+    gap: '16px',
+    border: '1px solid #27272A', // Zinc 800
   },
   header: {
     display: 'flex',
     alignItems: 'center',
-    gap: 10,
+    justifyContent: 'space-between',
   },
-  logo: {
-    fontSize: 28,
-    lineHeight: 1,
-  },
-  title: {
-    fontSize: 15,
-    fontWeight: 700,
-    letterSpacing: '-0.3px',
-  },
-  subtitle: {
-    fontSize: 11,
-    color: '#71717a',
-    marginTop: 1,
-  },
-  urlPill: {
+  brand: {
     display: 'flex',
     alignItems: 'center',
-    gap: 6,
-    background: '#18181b',
-    border: '1px solid #27272a',
-    borderRadius: 20,
-    padding: '5px 10px',
-    fontSize: 11,
-    color: '#a1a1aa',
+    gap: '8px',
+  },
+  icon: {
+    width: '16px',
+    height: '16px',
+    filter: 'invert(1)',
+  },
+  title: {
+    fontSize: '14px',
+    fontWeight: 600,
+    letterSpacing: '-0.02em',
+  },
+  badge: {
+    fontSize: '9px',
+    fontWeight: 700,
+    letterSpacing: '0.05em',
+    color: '#A1A1AA', // Zinc 400
+    border: '1px solid #27272A',
+    padding: '2px 6px',
+    borderRadius: '4px',
+  },
+  divider: {
+    height: '1px',
+    background: '#27272A', // Zinc 800
+    width: '100%',
+  },
+  infoSection: {
+    display: 'flex',
+    flexDirection: 'column',
+    gap: '6px',
+  },
+  label: {
+    fontSize: '10px',
+    fontWeight: 600,
+    color: '#71717A', // Zinc 500
+    letterSpacing: '0.05em',
+  },
+  urlBox: {
+    fontFamily: '"JetBrains Mono", "Fira Code", Consolas, monospace',
+    fontSize: '11px',
+    color: '#D4D4D8', // Zinc 300
+    background: '#18181B', // Zinc 900
+    padding: '8px',
+    borderRadius: '4px',
+    border: '1px solid #27272A',
+    whiteSpace: 'nowrap',
     overflow: 'hidden',
     textOverflow: 'ellipsis',
-    whiteSpace: 'nowrap',
-  },
-  dot: {
-    width: 6,
-    height: 6,
-    borderRadius: '50%',
-    background: '#22c55e',
-    flexShrink: 0,
-  },
-  description: {
-    fontSize: 12,
-    color: '#71717a',
-    lineHeight: 1.6,
-    margin: 0,
   },
   button: {
     width: '100%',
-    padding: '10px 16px',
-    background: '#6366f1',
-    color: '#fff',
+    padding: '10px',
+    background: '#FAFAFA', // White button
+    color: '#09090B', // Black text
     border: 'none',
-    borderRadius: 8,
-    fontSize: 13,
-    fontWeight: 500,
+    borderRadius: '4px',
+    fontSize: '12px',
+    fontWeight: 600,
     cursor: 'pointer',
-    transition: 'background 0.15s',
+    transition: 'all 0.15s ease',
   },
-  buttonDisabled: {
-    background: '#3f3f46',
-    cursor: 'not-allowed',
+  buttonLoading: {
+    background: '#27272A',
+    color: '#A1A1AA',
+    cursor: 'wait',
   },
   buttonSuccess: {
-    background: '#16a34a',
+    background: '#18181B',
+    color: '#FAFAFA',
+    border: '1px solid #27272A',
     cursor: 'default',
   },
   errorBox: {
-    background: '#2d0707',
-    border: '1px solid #7f1d1d',
-    borderRadius: 8,
-    padding: '8px 10px',
-    fontSize: 11,
-    color: '#fca5a5',
-    lineHeight: 1.5,
+    fontSize: '11px',
+    color: '#FCA5A5', // Red 300
+    background: '#450A0A', // Red 950
+    padding: '8px',
+    borderRadius: '4px',
+    border: '1px solid #7F1D1D', // Red 900
+    fontFamily: '"JetBrains Mono", "Fira Code", Consolas, monospace',
   },
-  footer: {
-    fontSize: 10,
-    color: '#3f3f46',
-    textAlign: 'center',
-  },
+  errorLabel: {
+    fontWeight: 700,
+  }
 };
