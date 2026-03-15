@@ -9,7 +9,7 @@
   "scripts": {
     "dev": "electron-vite dev",
     "build": "electron-vite build",
-    "dist": "electron-vite build && electron-builder"
+    "dist": "electron-vite build && electron-builder -lw"
   },
   "devDependencies": {
     "@types/bun": "latest",
@@ -52,6 +52,21 @@
       "packageCategory": "utils",
       "priority": "optional",
       "depends": ["libnss3", "libatk-bridge2.0-0", "libgtk-3-0"]
+    },
+    "win": {
+      "target": [
+        {
+          "target": "nsis",
+          "arch": ["x64"]
+        }
+      ],
+      "icon": "build/icons/icon.ico"
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "shortcutName": "Signal Browser"
     }
   }
 }
