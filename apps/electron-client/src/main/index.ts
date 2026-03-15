@@ -1,30 +1,59 @@
+/*
+Main process for the Signal Electron app.
+
+Responsibilities:
+- Enforce a single app instance (required for deep linking).
+- Register the custom protocol: signal://
+- Parse deep links and load the target URL.
+- Create the main BrowserWindow and embedded WebContentsView.
+- Handle navigation commands from the renderer via IPC.
+- Synchronize the URL bar with page navigation events.
+
+Architecture:
+
+Renderer (React UI)
+       │
+       ▼
+   Preload API
+       │
+       ▼
+     IPC
+       │
+       ▼
+Main Process (this file)
+       │
+       ▼
+WebContentsView loads websites
+*/
+
 import { app, BrowserWindow, WebContentsView, ipcMain } from 'electron'
 import { join } from 'path'
 
-app.setName('Signal Browser')
+app.setName('Signal')
 
-// 1. Enforce Single Instance (Crucial for deep linking)
+// Enforce single instance - prevents multiple copies of the app from running.
+// Required so deep links (signal://) are handled by the already running instance.
 const gotTheLock = app.requestSingleInstanceLock()
 
 if (!gotTheLock) {
   // If another instance is already running, quit this one immediately
   app.quit()
 } else {
-  let mainWindow: BrowserWindow
-  let browserView: WebContentsView
+  let mainWindow: BrowserWindow    // Main application window
+  let browserView: WebContentsView // Embedded browser that loads web pages
 
-  const UI_HEIGHT = 50
+  const UI_HEIGHT = 50 // Height reserved for the top UI (search bar / controls)
 
-  // 2. Register the protocol with Electron
+  // Register the protocol with Electron
   if (process.defaultApp) {
     if (process.argv.length >= 2) {
-      app.setAsDefaultProtocolClient('signal', process.execPath, [join(process.cwd(), process.argv[1] as string)])
+      app.setAsDefaultProtocolClient('signal', process.execPath, [join(process.cwd(), process.argv[1] as string)]) // Used in development mode (electron .) so the correct script is launched
     }
   } else {
-    app.setAsDefaultProtocolClient('signal')
+    app.setAsDefaultProtocolClient('signal') // Used in production after the app is packaged
   }
 
-// 3. Helper function to parse and load the deep link URL
+  // Helper function to parse and load the deep link URL
   // NOTE: Now returns a boolean so we know if it succeeded!
   const handleDeepLink = (argv: string[]): boolean => {
     const deepLinkArg = argv.find(arg => arg.startsWith('signal://'))
@@ -37,9 +66,9 @@ if (!gotTheLock) {
         
         if (targetUrl) {
           browserView.webContents.loadURL(targetUrl)
-          mainWindow.webContents.send('update-url', targetUrl)
+          mainWindow.webContents.send('update-url', targetUrl) // Send IPC message to renderer to update the URL bar
           
-          if (mainWindow.isMinimized()) mainWindow.restore()
+          if (mainWindow.isMinimized()) mainWindow.restore() // Restore the window if it was minimized
           mainWindow.focus()
           return true; // We found and loaded a link!
         }
@@ -50,7 +79,8 @@ if (!gotTheLock) {
     return false; // No link found
   }
 
-  // 4. Handle deep links when the app is ALREADY RUNNING
+  // Handle deep links when the app is already running.
+  // This event fires when a second instance is attempted (e.g., clicking signal:// link).
   app.on('second-instance', (_event, commandLine) => {
     if (mainWindow) {
       if (mainWindow.isMinimized()) mainWindow.restore()
@@ -62,10 +92,11 @@ if (!gotTheLock) {
     }
   })
 
-  // 1. Tell Chromium to ignore certificate errors globally
+// Disable SSL certificate validation
+// TODO: Handle certificate errors safely
 app.commandLine.appendSwitch('ignore-certificate-errors')
 
-// 2. Catch the specific event and force it to proceed
+// Catch the specific event and force it to proceed
 app.on('certificate-error', (event, webContents, url, error, certificate, callback) => {
   // Prevent the default behavior of immediately halting the load
   event.preventDefault()
@@ -90,19 +121,19 @@ app.on('certificate-error', (event, webContents, url, error, certificate, callba
     })
 
     if (process.env['ELECTRON_RENDERER_URL']) {
-      mainWindow.loadURL(process.env['ELECTRON_RENDERER_URL'])
+      mainWindow.loadURL(process.env['ELECTRON_RENDERER_URL'])       // Load the Vite/Dev server in development
     } else {
-      mainWindow.loadFile(join(__dirname, '../renderer/index.html'))
+      mainWindow.loadFile(join(__dirname, '../renderer/index.html')) // Load the built frontend in production
     }
 
     browserView = new WebContentsView()
-    mainWindow.contentView.addChildView(browserView)
+    mainWindow.contentView.addChildView(browserView)  // Attach the browser view below the UI (React toolbar + embedded web page)
 
     const resizeView = () => {
       const bounds = mainWindow.getBounds()
       browserView.setBounds({
         x: 0,
-        y: UI_HEIGHT,
+        y: UI_HEIGHT, // 50
         width: bounds.width,
         height: bounds.height - UI_HEIGHT - 30 
       })
@@ -118,11 +149,14 @@ app.on('certificate-error', (event, webContents, url, error, certificate, callba
     if (!launchedWithDeepLink) {
       browserView.webContents.loadURL('https://google.com')
     }
-
+    
+    // Update renderer: searchbar
     const updateUrlBar = (url: string) => {
       mainWindow.webContents.send('update-url', url)
     }
 
+    // Notify the renderer to update the URL bar when navigation occurs
+    // (covers link clicks, SPA navigation, redirects, etc.)
     browserView.webContents.on('did-navigate', (_event, url) => updateUrlBar(url))
     browserView.webContents.on('did-navigate-in-page', (_event, url) => updateUrlBar(url))
 

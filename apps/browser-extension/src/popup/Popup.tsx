@@ -1,5 +1,16 @@
+/*
+Popup UI for the Chrome extension.
+
+Features:
+- Detects the current tab URL
+- Displays a shortened version of the URL
+- Sends a message to the background script to launch the Signal desktop app
+- Shows loading, success, and error states
+*/
+
 import React, { useState, useEffect } from 'react';
 
+// Possible states of the launch process
 type Status = 'idle' | 'loading' | 'success' | 'error';
 
 export default function Popup() {
@@ -7,6 +18,7 @@ export default function Popup() {
   const [currentUrl, setCurrentUrl] = useState('');
   const [errorMsg, setErrorMsg] = useState('');
 
+ // Runs once when the popup loads to get the URL of the active tab
   useEffect(() => {
     chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
       if (tabs[0]?.url) {
@@ -15,6 +27,7 @@ export default function Popup() {
     });
   }, []);
 
+  // Sends a message to the background script to launch the desktop app
   const handleLaunch = () => {
     setStatus('loading');
     setErrorMsg('');
@@ -22,6 +35,8 @@ export default function Popup() {
     chrome.runtime.sendMessage(
       { type: 'LAUNCH_SIGNAL' },
       (res: { ok: boolean; error?: string }) => {
+        // If Chrome reports an error or the background script returned ok: false,
+        // treat the launch as failed
         if (chrome.runtime.lastError || !res?.ok) {
           setErrorMsg(res?.error ?? chrome.runtime.lastError?.message ?? 'Launch failed.');
           setStatus('error');
@@ -34,6 +49,16 @@ export default function Popup() {
   };
 
   const displayUrl = (() => {
+  
+    /*
+      Example URL: https://youtube.com/watch?v=abc
+
+      u.hostname -> youtube.com
+      u.pathname -> /watch
+      u.search   -> ?v=abc
+
+      path = /watch + ?v=abc
+    */
     try {
       const u = new URL(currentUrl);
       const path = u.pathname + u.search;
@@ -94,13 +119,13 @@ const styles: Record<string, React.CSSProperties> = {
   container: {
     width: 260,
     padding: '16px',
-    background: '#09090B', // Zinc 950
-    color: '#FAFAFA', // Zinc 50
+    background: '#09090B',
+    color: '#FAFAFA',
     fontFamily: 'Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif',
     display: 'flex',
     flexDirection: 'column',
     gap: '16px',
-    border: '1px solid #27272A', // Zinc 800
+    border: '1px solid #27272A',
   },
   header: {
     display: 'flex',
@@ -126,14 +151,14 @@ const styles: Record<string, React.CSSProperties> = {
     fontSize: '9px',
     fontWeight: 700,
     letterSpacing: '0.05em',
-    color: '#A1A1AA', // Zinc 400
+    color: '#A1A1AA',
     border: '1px solid #27272A',
     padding: '2px 6px',
     borderRadius: '4px',
   },
   divider: {
     height: '1px',
-    background: '#27272A', // Zinc 800
+    background: '#27272A',
     width: '100%',
   },
   infoSection: {
@@ -144,14 +169,14 @@ const styles: Record<string, React.CSSProperties> = {
   label: {
     fontSize: '10px',
     fontWeight: 600,
-    color: '#71717A', // Zinc 500
+    color: '#71717A',
     letterSpacing: '0.05em',
   },
   urlBox: {
     fontFamily: '"JetBrains Mono", "Fira Code", Consolas, monospace',
     fontSize: '11px',
-    color: '#D4D4D8', // Zinc 300
-    background: '#18181B', // Zinc 900
+    color: '#D4D4D8',
+    background: '#18181B',
     padding: '8px',
     borderRadius: '4px',
     border: '1px solid #27272A',
@@ -162,8 +187,8 @@ const styles: Record<string, React.CSSProperties> = {
   button: {
     width: '100%',
     padding: '10px',
-    background: '#FAFAFA', // White button
-    color: '#09090B', // Black text
+    background: '#FAFAFA',
+    color: '#09090B',
     border: 'none',
     borderRadius: '4px',
     fontSize: '12px',
@@ -184,11 +209,11 @@ const styles: Record<string, React.CSSProperties> = {
   },
   errorBox: {
     fontSize: '11px',
-    color: '#FCA5A5', // Red 300
-    background: '#450A0A', // Red 950
+    color: '#FCA5A5', 
+    background: '#450A0A',
     padding: '8px',
     borderRadius: '4px',
-    border: '1px solid #7F1D1D', // Red 900
+    border: '1px solid #7F1D1D',
     fontFamily: '"JetBrains Mono", "Fira Code", Consolas, monospace',
   },
   errorLabel: {

@@ -6,7 +6,7 @@ export default [
   js.configs.recommended,
   ...tseslint.configs.recommended,
 
-  // 🌐 Browser apps
+  // Browser apps
   {
     files: [
       "apps/browser-extension/**/*.{ts,js}",
@@ -18,7 +18,7 @@ export default [
     },
   },
 
-  // 🖥 Node apps (server + electron main)
+  // Node apps (server + electron main)
   {
     files: [
       "apps/server/**/*.{ts,js}",

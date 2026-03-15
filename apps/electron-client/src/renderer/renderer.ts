@@ -1,3 +1,29 @@
+/*
+Renderer-side toolbar controller for the Signal.
+
+Responsibilities:
+- Defines the TypeScript interface for the API exposed by the preload script (`window.browserApi`).
+- Connects the UI elements (URL input, Go, Back, Forward, Reload buttons) to navigation actions.
+- Sends navigation requests to the main process via the preload bridge.
+- Listens for URL updates from the main process and updates the search bar accordingly.
+
+Architecture:
+
+Renderer UI (this file)
+        │
+        ▼
+window.browserApi  (exposed by preload via contextBridge)
+        │
+        ▼
+IPC messaging (ipcRenderer ↔ ipcMain)
+        │
+        ▼
+Main process
+        │
+        ▼
+WebContentsView loads and navigates web pages
+*/
+
 // Define the interface for TypeScript to know about our exposed API
 declare global {
   interface Window {
@@ -34,6 +60,7 @@ backBtn.addEventListener('click', () => window.browserApi.goBack())
 forwardBtn.addEventListener('click', () => window.browserApi.goForward())
 reloadBtn.addEventListener('click', () => window.browserApi.reload())
 
+// Listens for URL changes
 window.browserApi.onUrlChange((newUrl) => {
   input.value = newUrl
 })
