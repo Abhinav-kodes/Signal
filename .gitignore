@@ -8,8 +8,13 @@ build/
 out/
 .vite/
 
-# Electron-vite
+# Electron-vite & Electron-builder
 apps/electron-client/out/
+apps/electron-client/release/
+
+# Prevent Git from ignoring your Electron icons
+!apps/electron-client/build/
+!apps/electron-client/build/icons/
 
 # Browser extension build
 apps/browser-extension/dist/

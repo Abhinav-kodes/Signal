@@ -10,21 +10,28 @@ chrome.runtime.onMessage.addListener(
         return;
       }
 
-      // Grab cookies so Electron can load the page as the authenticated user
-      const cookies = await chrome.cookies.getAll({ url: tab.url });
-      const cookieHeader = cookies.map(c => `${c.name}=${c.value}`).join('; ');
+      const deepLink = `signal://track?url=${encodeURIComponent(tab.url)}`;
 
-      const deepLink =
-        `signal://track` +
-        `?url=${encodeURIComponent(tab.url)}` +
-        `&cookie=${encodeURIComponent(cookieHeader)}`;
+      try {
+        // 1. We create a temporary active tab to trigger the launch.
+        // We MUST make it active so Chrome shows you the "Allow" prompt!
+        const newTab = await chrome.tabs.create({ url: deepLink, active: true });
+        
+        // 2. We don't auto-close it immediately anymore. 
+        // We give you 5 seconds to check the "Always Allow" box and click Open.
+        setTimeout(() => {
+          if (newTab.id) {
+            chrome.tabs.remove(newTab.id).catch(() => {});
+          }
+        }, 5000);
 
-      // Opening a tab with a custom protocol triggers the OS → opens Electron
-      await chrome.tabs.create({ url: deepLink, active: false });
-
-      sendResponse({ ok: true });
+        sendResponse({ ok: true });
+      } catch (err) {
+        sendResponse({ ok: false, error: 'Failed to launch.' });
+        console.error('Failed to launch.', err)
+      }
     });
 
-    return true; // keeps the channel open for the async callback
+    return true; 
   }
 );

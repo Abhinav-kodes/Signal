@@ -1,21 +1,21 @@
 {
-  "name": "browser-extension",
-  "module": "index.ts",
-  "type": "module",
+  "name": "@signal/browser-extension",
+  "version": "1.0.0",
   "private": true,
-  "devDependencies": {
-    "@types/bun": "latest",
-    "@types/chrome": "^0.1.37",
-    "@types/react": "^19.2.14",
-    "@types/react-dom": "^19.2.3",
-    "@vitejs/plugin-react": "^5.1.4",
-    "vite": "^7.3.1"
-  },
-  "peerDependencies": {
-    "typescript": "^5.9.3"
+  "scripts": {
+    "dev": "vite build --watch",
+    "build": "vite build"
   },
   "dependencies": {
-    "react": "^19.2.4",
-    "react-dom": "^19.2.4"
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0"
+  },
+  "devDependencies": {
+    "@types/chrome": "^0.0.310",
+    "@types/react": "^19.0.0",
+    "@types/react-dom": "^19.0.0",
+    "@vitejs/plugin-react": "^4.3.4",
+    "typescript": "^5.4.5",
+    "vite": "^5.4.0"
   }
 }

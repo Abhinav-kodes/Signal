@@ -1,0 +1,26 @@
+{
+  "manifest_version": 3,
+  "name": "Signal",
+  "version": "1.0.0",
+  "description": "Track any web element. Point, click, done.",
+  "permissions": ["activeTab", "tabs"],
+  "host_permissions": ["<all_urls>"],
+  "action": {
+    "default_popup": "src/popup/index.html",
+    "default_title": "Open in Signal",
+    "default_icon": {
+      "16": "16x16.png",
+      "48": "48x48.png",
+      "128": "128x128.png"
+    }
+  },
+  "background": {
+    "service_worker": "background.js",
+    "type": "module"
+  },
+  "icons": {
+    "16": "16x16.png",
+    "48": "48x48.png",
+    "128": "128x128.png"
+  }
+}
