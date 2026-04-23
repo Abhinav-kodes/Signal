@@ -26,4 +26,4 @@ jobs:
       run: bun install
 
     - name: Run tests
-      run: bun test apps/server/src/test.ts
+      run: bun test ./apps/server/src/test.ts
