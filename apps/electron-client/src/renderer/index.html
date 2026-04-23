@@ -4,64 +4,70 @@
     <meta charset="UTF-8" />
     <title>Signal Browser</title>
     <style>
+      *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
       body {
-        margin: 0;
-        padding: 0;
-        height: 50px; /* Must match UI_HEIGHT in main.ts */
-        background: #202124; /* Dark browser theme */
+        height: 50px;
+        background: #202124;
         display: flex;
         align-items: center;
         justify-content: center;
         font-family: system-ui, -apple-system, sans-serif;
         user-select: none;
+        overflow: hidden;
       }
-      
+
       .search-container {
         display: flex;
         width: 100%;
-        max-width: 900px;
+        max-width: 960px;
         padding: 0 16px;
         align-items: center;
+        gap: 8px;
       }
 
-      /* Group the Back/Forward buttons together */
       .nav-group {
         display: flex;
         gap: 4px;
-        margin-right: 12px;
       }
 
-      /* Circular, modern navigation buttons */
       .nav-btn {
-        width: 36px;
-        height: 36px;
-        border-radius: 50%;
-        border: none;
-        background: transparent;
-        color: #e8eaed; /* This color will automatically apply to the SVGs */
-        cursor: pointer;
-        display: flex;
-        align-items: center;
-        justify-content: center;
+        width: 36px; height: 36px;
+        border-radius: 50%; border: none;
+        background: transparent; color: #e8eaed;
+        cursor: pointer; display: flex;
+        align-items: center; justify-content: center;
         transition: background 0.2s ease;
+        flex-shrink: 0;
       }
-      .nav-btn:hover { 
-        background: #3c4043; 
+      .nav-btn:hover { background: #3c4043; }
+      .nav-btn svg { width: 20px; height: 20px; }
+
+      #picker-btn {
+        width: 36px; height: 36px;
+        border-radius: 50%; border: none;
+        background: transparent; color: #e8eaed;
+        cursor: pointer; display: flex;
+        align-items: center; justify-content: center;
+        font-size: 22px; line-height: 1;
+        transition: background 0.2s ease, color 0.2s ease;
+        flex-shrink: 0;
       }
-      
-      /* Make sure the SVG centers exactly and scales to 20px */
-      .nav-btn svg {
-        width: 20px;
-        height: 20px;
+      #picker-btn:hover { background: #3c4043; }
+      #picker-btn.active {
+        background: #8ab4f8;
+        color: #202124;
+        animation: pulse 1s ease-in-out infinite alternate;
+      }
+      @keyframes pulse {
+        from { box-shadow: 0 0 0 0 rgba(138,180,248,0.4); }
+        to   { box-shadow: 0 0 0 6px rgba(138,180,248,0); }
       }
 
-      /* Seamless pill-shaped search bar */
       .input-group {
-        display: flex;
-        flex: 1;
+        display: flex; flex: 1;
         background: #303134;
-        border-radius: 24px;
-        height: 36px;
+        border-radius: 24px; height: 36px;
         overflow: hidden;
         border: 1px solid transparent;
         transition: border-color 0.2s, background 0.2s;
@@ -71,60 +77,197 @@
         border-color: #5f6368;
       }
 
-      input {
-        flex: 1;
-        padding: 0 20px;
-        border: none;
-        outline: none;
-        background: transparent;
-        color: #e8eaed;
+      input[type="text"] {
+        flex: 1; padding: 0 20px;
+        border: none; outline: none;
+        background: transparent; color: #e8eaed;
         font-size: 14px;
       }
 
-      /* Subtler Go button that blends into the search bar */
       #go-btn {
-        padding: 0 20px;
-        border: none;
-        background: transparent;
-        color: #8ab4f8;
-        cursor: pointer;
-        font-weight: 500;
-        font-size: 14px;
+        padding: 0 20px; border: none;
+        background: transparent; color: #8ab4f8;
+        cursor: pointer; font-weight: 500; font-size: 14px;
       }
-      #go-btn:hover { 
-        background: #3c4043; 
+      #go-btn:hover { background: #3c4043; }
+
+      /* ── Watch Dialog ── */
+      .dialog-backdrop {
+        display: none;
+        position: fixed; inset: 0;
+        background: rgba(0,0,0,0.6);
+        z-index: 9999;
+        align-items: center; justify-content: center;
+      }
+      .dialog-backdrop.visible { display: flex; }
+
+      .dialog {
+        background: #2d2e30;
+        border: 1px solid #5f6368;
+        border-radius: 12px;
+        padding: 20px 24px;
+        width: 480px; max-width: 90vw;
+        display: flex; flex-direction: column;
+        gap: 12px;
+        box-shadow: 0 8px 32px rgba(0,0,0,0.5);
+      }
+
+      .dialog h3 {
+        color: #e8eaed; font-size: 15px; font-weight: 600;
+      }
+
+      .dialog-meta {
+        font-size: 12px; color: #9aa0a6;
+      }
+      .dialog-meta span {
+        color: #8ab4f8; font-family: monospace;
+      }
+
+      .dialog-preview {
+        background: #1a1b1d;
+        border: 1px solid #3c4043;
+        border-radius: 6px;
+        padding: 8px 10px;
+        font-family: monospace; font-size: 11px;
+        color: #bdc1c6; max-height: 60px;
+        overflow: hidden; line-height: 1.5;
+        word-break: break-all;
+      }
+
+      .dialog label {
+        color: #9aa0a6; font-size: 12px;
+      }
+
+      .dialog input[type="text"] {
+        background: #1a1b1d;
+        border: 1px solid #5f6368;
+        border-radius: 8px;
+        padding: 10px 14px;
+        color: #e8eaed; font-size: 14px;
+        width: 100%;
+        transition: border-color 0.2s;
+      }
+      .dialog input[type="text"]:focus {
+        outline: none;
+        border-color: #8ab4f8;
+      }
+
+      .dialog-hint {
+        font-size: 11px; color: #5f6368;
+        font-style: italic;
+      }
+
+      .dialog-actions {
+        display: flex; gap: 8px; justify-content: flex-end;
+        margin-top: 4px;
+      }
+
+      .btn-cancel {
+        padding: 8px 18px; border-radius: 8px;
+        border: 1px solid #5f6368;
+        background: transparent; color: #9aa0a6;
+        cursor: pointer; font-size: 13px;
+        transition: background 0.2s;
+      }
+      .btn-cancel:hover { background: #3c4043; color: #e8eaed; }
+
+      .btn-confirm {
+        padding: 8px 18px; border-radius: 8px;
+        border: none;
+        background: #8ab4f8; color: #202124;
+        cursor: pointer; font-size: 13px; font-weight: 600;
+        transition: background 0.2s;
+      }
+      .btn-confirm:hover { background: #aecbfa; }
+
+      /* ── Toast ── */
+      .toast {
+        position: fixed; bottom: 60px; left: 50%;
+        transform: translateX(-50%) translateY(10px);
+        background: #303134;
+        border: 1px solid #5f6368;
+        border-left: 3px solid #34a853;
+        color: #e8eaed; font-size: 13px;
+        padding: 10px 18px; border-radius: 8px;
+        opacity: 0; pointer-events: none;
+        transition: opacity 0.3s ease, transform 0.3s ease;
+        z-index: 99999; white-space: nowrap;
+      }
+      .toast.visible {
+        opacity: 1;
+        transform: translateX(-50%) translateY(0);
       }
     </style>
   </head>
   <body>
+
     <div class="search-container">
       <div class="nav-group">
         <button id="back-btn" class="nav-btn" title="Go back">
           <svg viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round">
-            <line x1="19" y1="12" x2="5" y2="12"></line>
-            <polyline points="12 19 5 12 12 5"></polyline>
+            <line x1="19" y1="12" x2="5" y2="12"/>
+            <polyline points="12 19 5 12 12 5"/>
           </svg>
         </button>
         <button id="forward-btn" class="nav-btn" title="Go forward">
           <svg viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round">
-            <line x1="5" y1="12" x2="19" y2="12"></line>
-            <polyline points="12 5 19 12 12 19"></polyline>
+            <line x1="5" y1="12" x2="19" y2="12"/>
+            <polyline points="12 5 19 12 12 19"/>
           </svg>
         </button>
         <button id="reload-btn" class="nav-btn" title="Reload page">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <polyline points="23 4 23 10 17 10"></polyline>
-            <path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"></path>
+            <polyline points="23 4 23 10 17 10"/>
+            <path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/>
           </svg>
         </button>
       </div>
-      
+
       <div class="input-group">
         <input type="text" id="url-input" placeholder="Search Google or type a URL" autocomplete="off" spellcheck="false" />
         <button id="go-btn">Go</button>
       </div>
+
+      <button id="picker-btn" title="Pick element to watch">+</button>
+      
+      <div class="auth-section">
+        <button id="login-btn" class="nav-btn" style="width: auto; padding: 0 12px; font-size: 13px; border-radius: 18px; border: 1px solid #5f6368;" title="Login with Google">Login</button>
+        <button id="monitors-btn" class="nav-btn" style="display: none; width: auto; padding: 0 12px; font-size: 13px; border-radius: 18px; border: 1px solid #5f6368;" title="View Monitors">Monitors</button>
+      </div>
     </div>
-    
+
+    <!-- Monitors dialog -->
+    <div class="dialog-backdrop" id="monitors-dialog">
+      <div class="dialog" style="width: 600px; max-height: 80vh; overflow-y: auto;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+          <h3>Your Saved Monitors</h3>
+          <button class="nav-btn" id="close-monitors-btn" style="width: 28px; height: 28px;">×</button>
+        </div>
+        <div id="monitors-list" style="display: flex; flex-direction: column; gap: 12px; color: #bdc1c6; font-size: 13px;">
+          Loading monitors...
+        </div>
+      </div>
+    </div>
+
+    <!-- Watch condition dialog -->
+    <div class="dialog-backdrop" id="watch-dialog">
+      <div class="dialog">
+        <h3>Set Watch Condition</h3>
+        <p class="dialog-meta">Selected: <span id="dialog-selector"></span></p>
+        <div class="dialog-preview" id="dialog-preview"></div>
+        <label for="condition-input">Describe your condition in plain English</label>
+        <input type="text" id="condition-input" placeholder='e.g. "when the price drops below ₹200"' />
+        <p class="dialog-hint">This will be saved and used to monitor the element.</p>
+        <div class="dialog-actions">
+          <button class="btn-cancel" id="cancel-watch">Cancel</button>
+          <button class="btn-confirm" id="confirm-watch">Save Watch</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Save confirmation toast -->
+    <div class="toast" id="toast">✓ Watch saved to /watches/</div>
+
     <script type="module" src="./renderer.ts"></script>
   </body>
 </html>

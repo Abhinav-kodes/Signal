@@ -16,11 +16,17 @@
     "dotenv": "^17.3.1",
     "drizzle-orm": "^0.45.1",
     "express": "^5.0.1",
-    "ioredis": "^5.4.1"
+    "express-oauth2-jwt-bearer": "^1.8.0",
+    "ioredis": "^5.4.1",
+    "jsdom": "^29.0.2",
+    "nodemailer": "^8.0.5",
+    "playwright": "^1.59.1"
   },
   "devDependencies": {
     "@types/cors": "^2.8.17",
     "@types/express": "^5.0.0",
+    "@types/jsdom": "^28.0.1",
+    "@types/nodemailer": "^8.0.0",
     "drizzle-kit": "^0.31.9"
   }
 }

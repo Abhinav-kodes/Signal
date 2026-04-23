@@ -14,6 +14,12 @@
     "verbatimModuleSyntax": true,
     "noEmit": true,
 
+    // Workspace package aliases — resolved directly to source (no build step needed)
+    "baseUrl": ".",
+    "paths": {
+      "@signal/shared-types": ["../../packages/shared-types/index.ts"]
+    },
+
     // Best practices
     "strict": true,
     "skipLibCheck": true,
