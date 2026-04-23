@@ -42,60 +42,6 @@ export async function scheduleTracker(trackerId: string, intervalMs = 5 * 60 * 1
   console.log(`[queue] Scheduled tracker ${trackerId} every ${intervalMs / 1000}s`)
 }
 
-// ── XPath evaluator ───────────────────────────────────────────────────────────
-
-/**
- * Runs an XPath expression against an HTML string.
- * Returns the trimmed text content of the first matching node, or null.
- */
-function evaluateXPath(html: string, xpath: string): string | null {
-  const dom = new JSDOM(html)
-  const doc = dom.window.document
-  const result = doc.evaluate(
-    xpath,
-    doc,
-    null,
-    dom.window.XPathResult.FIRST_ORDERED_NODE_TYPE,
-    null
-  )
-  const node = result.singleNodeValue
-  return node ? (node as Element).textContent?.trim() ?? null : null
-}
-
-// ── Condition evaluator ───────────────────────────────────────────────────────
-
-type Operator = '<' | '>' | '==' | 'contains'
-
-/**
- * Compares extracted value against targetValue using the stored operator.
- * Strips currency symbols and commas before numeric comparison.
- */
-function evaluateCondition(
-  rawValue: string,
-  operator: Operator,
-  targetValue: string | number
-): boolean {
-  if (operator === 'contains') {
-    return rawValue.toLowerCase().includes(String(targetValue).toLowerCase())
-  }
-
-  // Normalize: strip ₹, $, commas, spaces → parse float
-  const numeric = parseFloat(rawValue.replace(/[^\d.]/g, ''))
-  const target  = typeof targetValue === 'number' ? targetValue : parseFloat(String(targetValue))
-
-  if (isNaN(numeric) || isNaN(target)) {
-    console.warn(`[worker] Could not parse numeric values: "${rawValue}" vs ${targetValue}`)
-    return false
-  }
-
-  switch (operator) {
-    case '<':  return numeric < target
-    case '>':  return numeric > target
-    case '==': return numeric === target
-    default:   return false
-  }
-}
-
 // ── Job processor ─────────────────────────────────────────────────────────────
 
 const worker = new Worker(
@@ -136,6 +82,9 @@ const worker = new Worker(
       await db.update(trackers)
         .set({ status: 'error', lastCheckedAt: new Date() })
         .where(eq(trackers.id, trackerId))
+
+      // Exit early to prevent accessing unassigned variables below
+      return { skipped: true, reason: 'extraction_failed', error: err.message }
     }
 
     console.log(`[worker] Extracted value: "${extractedValue}" | Condition: ${rule.operator} ${rule.targetValue}`)
