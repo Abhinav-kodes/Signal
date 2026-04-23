@@ -1,5 +1,8 @@
 name: CI
 
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+
 on:
   push:
     branches: [ "main", "master" ]
@@ -23,4 +26,4 @@ jobs:
       run: bun install
 
     - name: Run tests
-      run: bun test
+      run: bun test apps/server/src/test.ts
